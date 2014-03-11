@@ -109,6 +109,16 @@ module Chess
       #   (2b) assign the board[start_pos] to nil
       #   (2c) reassign the piece's position to end_pos
 
+      piece_to_move = self[[start_pos]]
+      raise NoPieceFoundError.new "No piece in position" unless piece_to_move
+      poss_moves = piece_to_move.moves
+      raise InvalidMoveError.new "Move Invalid" unless poss_moves.include?(end_pos)
+
+      self.grid[end_pos.first][end_pos.last] = piece_to_move
+      self.grid[start_pos.first][start_pos.last] = nil
+      piece_to_move.position = end_pos
+
+      nil
     end
 
     def [](position)
@@ -120,7 +130,18 @@ module Chess
       # duplicate the outer array, the inner arrays, and the pieces contained in the inner arrays
       # (1) Duplicate the outer array and inner array (only one command needed)
       # (2)
+      duped_grid = Array.new(8) {Array.new(8)}
+      duped_board = Board.new(duped_grid)
 
+      (0..7).each do |row|
+        (0..7).each do |col|
+          if self[[row, col]]
+            duped_grid[row][col] = self[[row, col]].dup_with_board(duped_board)
+          end
+        end
+      end
+
+      duped_board
     end
 
 
@@ -151,6 +172,7 @@ module Chess
     def valid_moves
       # (1) Calls moves
       # (2) Rejects all moves that would move_into_check
+      self.moves.reject(&:move_into_check?)
     end
 
     private
@@ -165,8 +187,10 @@ module Chess
 
     def move_into_check?(pos)
       # (1) duplicate the board
+      duped_board = self.board.dup
       # (2) move the piece into pos
       # (3) return true if board.in_check?(own color)
+
     end
 
 
@@ -362,6 +386,12 @@ module Chess
     end
 
 
+  end
+
+  class NoPieceFoundError < StandardError
+  end
+
+  class InvalidMoveError < StandardError
   end
 
 end
