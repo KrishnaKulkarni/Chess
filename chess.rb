@@ -1,3 +1,6 @@
+require 'colorize'
+# encoding: utf-8
+
 module Chess
 
   DIAGONALS = [ [1,1], [1,-1], [-1,-1], [-1,1] ]
@@ -142,6 +145,54 @@ module Chess
       end
 
       duped_board
+    end
+
+    def render
+
+      displays = {
+      [:black, :king] => "\u2654",
+      [:black, :queen] => "\u2655",
+      [:black, :bishop] => "\u2657",
+      [:black, :knight] => "\u2658",
+      [:black, :rook] => "\u2656",
+      [:black, :pawn] => "\u2659",
+      [:white, :king] => "\u2654".yellow,
+      [:white, :queen] => "\u2655".yellow,
+      [:white, :bishop] => "\u2657".yellow,
+      [:white, :knight] => "\u2658".yellow,
+      [:white, :rook] => "\u2656".yellow,
+      [:white, :pawn] => "\u2659".yellow,
+      }
+
+      print "   "
+      8.times {|i| print "#{i}  "}
+      puts
+      (0..7).each do |row|
+        print "#{row}  "
+        (0..7).each do |col|
+          bgrd_white = ((row + col) % 2 == 0)
+
+          piece = self.grid[row][col]
+          if piece.nil?
+            if (bgrd_white)
+              print "   "
+            else
+              print "   ".on_white
+            end
+          else
+            if (bgrd_white)
+              piece = [piece.color, piece.piece_type]
+              print " "+(displays[piece]+ " ")
+            else
+              piece = [piece.color, piece.piece_type]
+              print " ".on_white+(displays[piece].on_white + " ".on_white)
+            end
+          end
+        end
+        puts
+      end
+
+      nil
     end
 
 
