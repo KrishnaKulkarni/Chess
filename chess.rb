@@ -1,25 +1,28 @@
 module Chess
 
-MOVE_DIRECTIONS = {
+  DIAGONALS = [ [1,1], [1,-1], [-1,-1], [-1,1] ]
+  HORIZONTALS = [ [1,0], [0,1], [-1, 0], [0, -1] ]
+  KNIGHT_DIRS = [ [1, 2], [1, -2], [-1, 2], [-1, -2],
+                  [2, 1], [2, -1], [-2, 1], [-2, -1]]
 
-  queen: DIAGONALS + HORIZONTALS,
-  bishop: DIAGONALS,
-  rook: HORIZONTALS,
-  king: DIAGONALS + HORIZONTALS
-  knight: KNIGHT_DIRS
-  #pawn is weird; do later
+  MOVE_DIRECTIONS = {
+    queen: DIAGONALS + HORIZONTALS,
+    bishop: DIAGONALS,
+    rook: HORIZONTALS,
+    king: DIAGONALS + HORIZONTALS,
+    knight: KNIGHT_DIRS
+    #pawn is weird; do later
+    }
 
 
-}
-
-DIAGONALS = [ [1,1], [1,-1], [-1,-1], [-1,1] ]
-HORIZONTALS = [ [1,0], [0,1], [-1, 0], [0, -1] ]
-KNIGHT_DIRS = [ [1, 2], [1, -2], [-1, 2], [-1, -2],
-[2, 1], [2, -1], [-2, 1], [-2, -1]]
 
   class Piece
+
+    attr_reader :color, :position, :board, :piece_type
+
     def initialize(color, position, board)
       @color, @position, @board = color, position, board
+      @piece_type = nil
     end
 
     def moves
@@ -71,7 +74,7 @@ KNIGHT_DIRS = [ [1, 2], [1, -2], [-1, 2], [-1, -2],
          [x + dx * mult, y + dy * mult]
 
        end
-     end.select(&:on_board?)
+     end.flatten(1).select { |coord| on_board?(coord) }
 
 
     end
@@ -95,7 +98,7 @@ KNIGHT_DIRS = [ [1, 2], [1, -2], [-1, 2], [-1, -2],
       directions.map do |(dx, dy)|
         x, y = self.position
         [x + dx, y + dy]
-      end.select(&:on_board?)
+      end.select { |coord| on_board?(coord) }
 
     end
 
