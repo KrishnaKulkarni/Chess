@@ -15,6 +15,60 @@ module Chess
     }
 
 
+  class Board
+    attr_accessor :grid
+
+    #later on add the feature that you can create a Board mid-game
+    # => a filled grid(8x8)
+    def Board.default_setup
+      grid = Array.new(8) { Array.new(8) }
+
+      #could make more slick with better choice of iterators
+      pawn_row = []
+      [:white, :black].each do |color|
+        8.times do |col|
+          row = (color == :white) ? 1 : 6
+          p = Pawn.new(color, [row, col], grid)
+          pawn_row << p
+        end
+      end
+
+      grid[1], grid[6] = pawn_row.take(8), pawn_row.drop(8)
+
+
+      piece_row = []
+      [:white, :black].each do |color|
+        8.times do |col|
+          row = (color == :white) ? 0 : 7
+
+          case col
+          when 0 then p = Rook.new(color, [row, col], grid)
+          when 1 then p = Knight.new(color, [row, col], grid)
+          when 2 then p = Bishop.new(color, [row, col], grid)
+          when 3 then p = King.new(color, [row, col], grid)
+          when 4 then p = Queen.new(color, [row, col], grid)
+          when 5 then p = Bishop.new(color, [row, col], grid)
+          when 6 then p = Knight.new(color, [row, col], grid)
+          when 7 then p = Rook.new(color, [row, col], grid)
+          end
+
+          piece_row << p
+        end
+      end
+
+      grid[0], grid[7] = piece_row.take(8), piece_row.drop(8)
+
+      grid
+    end
+
+
+    def initialize(grid = Board.default_setup)
+      @grid = grid
+    end
+
+
+  end
+
 
   class Piece
 
@@ -27,6 +81,10 @@ module Chess
 
     def moves
       raise "You haven't yet overwritten this method yet"
+    end
+
+    def inspect
+      [self.piece_type, self.color].inspect
     end
 
     private
@@ -156,6 +214,12 @@ module Chess
   end
 
   class Pawn < Piece
+
+    def moves
+
+    end
+
+
   end
 
 end
