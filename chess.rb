@@ -277,8 +277,44 @@ module Chess
 
   class Pawn < Piece
 
-    def moves
+    def initialize(color, position, board)
+      super(color, position, board)
+      @piece_type = :pawn
+    end
 
+    # pawn always can move one step forward (unless same-color-blocked, opp-color-blocked or off board)
+    # pawn can also move forward two steps if hasn't been moved before (unless same-color-blocked, opp-color-blocked or off board)
+    # pawns can also move diagonal-forward if there is an opp-colored-piece there
+
+    def moves
+      moves = []
+
+      x, y = self.position
+      sign = self.color == :white ? 1 : -1
+      init_row = self.color == :white ? 1 : 6
+
+      one_up = [x + (1 * sign), y]
+      two_up = [x + (2 * sign), y]
+
+      moves << one_up if self.board[one_up].nil?
+
+      if (self.board[one_up].nil? && self.board[two_up].nil?
+        && self.position.first == init_row)
+        moves << two_up
+      end
+
+      diag_left = [x + (1 * sign), y + 1]
+      diag_right = [x + (1 * sign), y - 1]
+
+      if self.board[diag_left] && self.board[diag_left].color != self.color
+        moves << diag_left
+      end
+
+      if self.board[diag_right] && self.board[diag_right].color != self.color
+        moves << diag_right
+      end
+
+      moves.select { |move| on_board?(move) }
     end
 
 
