@@ -67,15 +67,36 @@ module Chess
     end
 
     def in_check?(color)
-      # find the right-colored king's position
+      # (1)find the right-colored king's position
       # -> nested iteration through whole grid, until grid[position] == KING
       # ---> if there is no king, raise error
       #
-      # find if any other piece can move there
+      # (2)find if any other piece can move there
       # Algorithm1: iterate through every other-colored piece
       # -> if that piece's moves_array includes the King's position => in check
       # Algorithm2: starting at the king's square, go through all the ways a piece can move (e..g DIAGONALS, KNIGHTS_DIRs, etc.)
       # if, by moving in that direction, the KING could reach the square of an other-colored piece of the right type => in check (e.g. if by moving diagonally, the white King could reach a black bishop or a black Queen, then the King is in check)
+
+      kings_position = nil
+      (0..7).each do |row|
+        (0..7).each do |col|
+          if (self[[row, col]].class == King && self[[row, col]].color == color)
+            kings_position = [row, col]
+            break
+          end
+          break if kings_position
+        end
+      end
+      raise "No king on the board" if kings_position.nil?
+
+
+      (0..7).any? do |row|
+        (0..7).any? do |col|
+          next if self[[row, col]].nil?
+
+          self[[row, col]].moves.include?(kings_position)
+        end
+      end
 
     end
 
@@ -93,6 +114,13 @@ module Chess
     def [](position)
       x,y = position
       self.grid[x][y]
+    end
+
+    def dup
+      # duplicate the outer array, the inner arrays, and the pieces contained in the inner arrays
+      # (1) Duplicate the outer array and inner array (only one command needed)
+      # (2)
+
     end
 
 
@@ -116,13 +144,29 @@ module Chess
       [self.piece_type, self.color].inspect
     end
 
+    def dup_with_board(board)
+      # (1) create new piece with (own_color, a dup of own_pos, board, own_piece_type)
+    end
+
+    def valid_moves
+      # (1) Calls moves
+      # (2) Rejects all moves that would move_into_check
+    end
+
     private
-    def on_board?(move_pos)
-      move_pos.first.between?(0,7) && move_pos.last.between?(0,7)
+    def on_board?(pos)
+      pos.first.between?(0,7) && pos.last.between?(0,7)
     end
 
     def not_blocked?(pos)
+      return false unless on_board?(pos) #refactor this
       self.board[pos].nil? || (self.board[pos].color != self.color)
+    end
+
+    def move_into_check?(pos)
+      # (1) duplicate the board
+      # (2) move the piece into pos
+      # (3) return true if board.in_check?(own color)
     end
 
 
@@ -299,8 +343,7 @@ module Chess
 
       moves << one_up if self.board[one_up].nil?
 
-      if (self.board[one_up].nil? && self.board[two_up].nil?
-        && self.position.first == init_row)
+      if (self.board[one_up].nil? && self.board[two_up].nil? && self.position.first == init_row)
         moves << two_up
       end
 
