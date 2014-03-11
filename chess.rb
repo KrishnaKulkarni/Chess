@@ -164,19 +164,20 @@ module Chess
       # --  if the current position is occupied by an other-colored piece
       # --- or if the subsequent position is occupied by a same-colored piece
       poss_moves = []
-      poss_moves.tap do
-        directions.each do |(dx, dy)|
-          multipliers.each do |mult|
-            x, y = self.position
 
-            cand_pos = [x + dx * mult, y + dy * mult]
-            break if !(not_blocked?(cand_pos))
+      directions.each do |(dx, dy)|
+        multipliers.each do |mult|
+          x, y = self.position
 
-            poss_moves << cand_pos
-            break if board[cand_pos] && (board[cand_pos].color != self.color)
-          end
+          cand_pos = [x + dx * mult, y + dy * mult]
+          break if !(not_blocked?(cand_pos))
+
+          poss_moves << cand_pos
+          break if board[cand_pos] && (board[cand_pos].color != self.color)
         end
-      end.select { |coord| on_board?(coord) }
+      end
+
+      poss_moves.select { |coord| on_board?(coord) }
 
 
      #
