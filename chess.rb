@@ -141,7 +141,7 @@ module Chess
       #   (2c) reassign the piece's position to end_pos
 
       piece_to_move = self[start_pos]
-      raise NoPieceFoundError.new "No piece in position" unless piece_to_move
+      raise InvalidMoveError.new "No piece in position" unless piece_to_move
       poss_moves = piece_to_move.valid_moves
       raise InvalidMoveError.new "Move Invalid" unless poss_moves.include?(end_pos)
 
@@ -487,10 +487,80 @@ module Chess
 
   end
 
-  class NoPieceFoundError < StandardError
-  end
+  # class NoPieceFoundError < StandardError
+  # end
 
   class InvalidMoveError < StandardError
+  end
+
+  class Game
+
+    # def initialize(board = Board.new, player1 = HumanPlayer.new,
+    #   player2 = HumanPlayer.new)
+    #   @board = board
+    #   @player1 = player1
+    #   @player2 = player2
+    # end
+
+    def initialize(board = Board.new)
+       @board = board
+    end
+
+    def play
+      puts "Welcome to Chess"
+      @board.render
+      puts "Please enter your move by entering your start coordinates(e.g. 1,3)"
+      puts "And then enter the end coordinates (e.g. 3,3)"
+      #take moves loop
+      turn_num = 0
+      until(game_over?)
+        puts turn_num.even? ? "White to move"  : "Black to move"
+
+        begin
+          print "Start position > "
+          start_pos = gets.chomp.split(',').map(&:to_i)
+
+          print "End position > "
+          end_pos = gets.chomp.split(',').map(&:to_i)
+
+
+          execute_move(start_pos, end_pos, turn_num)
+        rescue InvalidMoveError => e
+          puts "#{e.message}"
+          puts "Please choose a valid move"
+          retry
+        end
+
+        @board.render
+
+        unless game_over?
+          puts "White is in check" if @board.in_check?(:white)
+          puts "Black is in check" if @board.in_check?(:black)
+        end
+
+        turn_num += 1
+      end
+
+      puts "Checkmate achieved!"
+      puts turn_num.odd? ? "White wins"  : "Black wins"
+
+    end
+
+    def game_over?
+      # come back later for draws
+      @board.checkmate?(:black) || @board.checkmate?(:white)
+    end
+
+    def execute_move(start_pos, end_pos, turn_num)
+      #check if piece at start_pos is of the right color (matches the turn number)
+      color_to_move = (turn_num.even? ? :white : :black)
+      if (@board[start_pos].color != color_to_move )
+        raise InvalidMoveError.new("You must move a piece of your own color")
+      end
+
+      @board.move(start_pos, end_pos)
+    end
+
   end
 
 end
