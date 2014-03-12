@@ -95,12 +95,40 @@ module Chess
 
       (0..7).any? do |row|
         (0..7).any? do |col|
-          next if self[[row, col]].nil?
+          next if self[[row, col]].nil? || self[[row, col]].color == color
 
           self[[row, col]].moves.include?(kings_position)
         end
       end
 
+    end
+
+    def checkmate?(color)
+      # is player in check?
+      # if so, does any piece have any valid moves?
+      return false unless in_check?(color)
+
+      (0..7).all? do |row|
+        (0..7).all? do |col|
+          if self[[row, col]].nil? || self[[row, col]].color != color
+            true
+          else
+            self[[row, col]].valid_moves.empty?
+          end
+        end
+      end
+
+      # checkmate = true
+ #      if in_check?(color)
+ #        (0..7).each do |row|
+ #          (0..7).each do |col|
+ #            if self[[row, col]].color == color
+ #              checkmate = false if self[[row, col]].valid_moves.empty?
+ #            end
+ #          end
+ #        end
+ #      end
+ #      checkmate
     end
 
     def move(start_pos, end_pos)
@@ -112,9 +140,9 @@ module Chess
       #   (2b) assign the board[start_pos] to nil
       #   (2c) reassign the piece's position to end_pos
 
-      piece_to_move = self[[start_pos]]
+      piece_to_move = self[start_pos]
       raise NoPieceFoundError.new "No piece in position" unless piece_to_move
-      poss_moves = piece_to_move.moves
+      poss_moves = piece_to_move.valid_moves
       raise InvalidMoveError.new "Move Invalid" unless poss_moves.include?(end_pos)
 
       self.grid[end_pos.first][end_pos.last] = piece_to_move
@@ -139,7 +167,11 @@ module Chess
       (0..7).each do |row|
         (0..7).each do |col|
           if self[[row, col]]
-            duped_grid[row][col] = self[[row, col]].dup_with_board(duped_board)
+            # duped_grid[row][col] = self[[row, col]].dup_with_board(duped_board)
+           #self[[row, col]] contains a piece
+            duped_piece = self[[row, col]].dup
+            duped_piece.board = duped_board
+            duped_grid[row][col] = duped_piece
           end
         end
       end
@@ -202,6 +234,8 @@ module Chess
   class Piece
 
     attr_reader :color, :position, :board, :piece_type
+    #later refactor out this writer, and just add a dup method for each piece
+    attr_writer :position, :board
 
     def initialize(color, position, board)
       @color, @position, @board = color, position, board
@@ -216,14 +250,20 @@ module Chess
       [self.piece_type, self.color].inspect
     end
 
-    def dup_with_board(board)
-      # (1) create new piece with (own_color, a dup of own_pos, board, own_piece_type)
-    end
+    # def dup_with_board(board)
+#       # (1) create new piece with (own_color, a dup of own_pos, board, own_piece_type)
+#       duped_color = self.color
+#       duped_position = self.position
+#       duped_board = board
+#       Piece.new()
+#       #[duped_color, duped_position, duped_board]
+#       [self.color, self.position, self.]
+#     end
 
     def valid_moves
       # (1) Calls moves
       # (2) Rejects all moves that would move_into_check
-      self.moves.reject(&:move_into_check?)
+      self.moves.reject { |move| move_into_check?(move) }
     end
 
     private
@@ -240,8 +280,12 @@ module Chess
       # (1) duplicate the board
       duped_board = self.board.dup
       # (2) move the piece into pos
+      #duped_board.move(self.position, pos)
+      duped_board.grid[pos.first][pos.last] = self
+      duped_board.grid[self.position.first][self.position.last] = nil
+      self.position = pos
       # (3) return true if board.in_check?(own color)
-
+      duped_board.in_check?(self.color)
     end
 
 
@@ -351,6 +395,10 @@ module Chess
       super(color, position, board)
       @piece_type = :queen
     end
+
+   # def dup_with_board(board)
+ #     Queen.new(self.color, self.position, board)
+ #   end
 
   end
 
