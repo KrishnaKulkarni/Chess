@@ -157,39 +157,78 @@ module Chess
 
       raise InvalidMoveError.new "Move Invalid" unless poss_moves.include?(end_pos)
 
-      self.grid[end_pos.first][end_pos.last] = piece_to_move
-      # if end_pos == a castling move
-      # ----> move the rook as appropriate
-      if((end_pos == k_castling_move) && is_king)
-        rook_start = (color == :white) ? [0, 0] : [7,0]
-        rook_end = (color == :white) ? [0, 2] : [7,2]
 
-        rook = self[rook_start]
+      # Promoting pawns
+      if ((piece_to_move.class == Pawn) && ([0, 7].include? end_pos.first))
 
-        rook.position = rook_end
-        self[rook_end] = rook
-        self[rook_start] = nil
-      end
-      #---Queenside
-      if((end_pos == q_castling_move) && is_king)
-        rook_start = (color == :white) ? [0, 7] : [7,7]
-        rook_end = (color == :white) ? [0, 4] : [7,4]
 
-        rook = self[rook_start]
+        promotion = nil
+        begin
+          puts "Pawn Promotion: Choose a new piece for the promotion:"
+          print "Enter a Q, R, B, or N: > "
+          promotion = gets.chomp.upcase
+          raise InvalidInputError.new unless %w{Q B N R}.include? promotion
+        rescue InvalidInputError
+          puts "Please enter a valid input"
+          retry
+        end
 
-        rook.position = rook_end
-        self[rook_end] = rook
-        self[rook_start] = nil
-      end
+        new_piece = nil
+        case promotion
+        when 'Q' then new_piece = Queen.new(color, end_pos, self)
+        when 'R' then new_piece = Rook.new(color, end_pos, self)
+        when 'B' then new_piece = Bishop.new(color, end_pos, self)
+        when 'N' then new_piece = Knight.new(color, end_pos, self)
+        end
 
-      #----Queen
+        #maybe we could nil out the position of the old pawn
+        self[end_pos] = new_piece
+        self[start_pos] = nil
 
-      self.grid[start_pos.first][start_pos.last] = nil
-      piece_to_move.position = end_pos
 
-      if(piece_to_move.class == King || piece_to_move.class == Rook)
-        piece_to_move.has_moved = true
-      end
+
+
+
+
+      #--------
+      else
+
+        self.grid[end_pos.first][end_pos.last] = piece_to_move
+        # if end_pos == a castling move
+        # ----> move the rook as appropriate
+        if((end_pos == k_castling_move) && is_king)
+          rook_start = (color == :white) ? [0, 0] : [7,0]
+          rook_end = (color == :white) ? [0, 2] : [7,2]
+
+          rook = self[rook_start]
+
+          rook.position = rook_end
+          self[rook_end] = rook
+          self[rook_start] = nil
+        end
+        #---Queenside
+        if((end_pos == q_castling_move) && is_king)
+          rook_start = (color == :white) ? [0, 7] : [7,7]
+          rook_end = (color == :white) ? [0, 4] : [7,4]
+
+          rook = self[rook_start]
+
+          rook.position = rook_end
+          self[rook_end] = rook
+          self[rook_start] = nil
+        end
+
+        #----Queenside castling
+
+
+        self.grid[start_pos.first][start_pos.last] = nil
+        piece_to_move.position = end_pos
+
+        if(piece_to_move.class == King || piece_to_move.class == Rook)
+          piece_to_move.has_moved = true
+        end
+
+    end
 
       nil
     end
@@ -227,7 +266,7 @@ module Chess
       duped_board
     end
 
-    def render
+    def render(color)
 
       displays = {
       [:black, :king] => "\u2654",
@@ -244,32 +283,62 @@ module Chess
       [:white, :pawn] => "\u2659".yellow,
       }
 
-      print "   "
-      ("hgfedcba").each_char {|i| print " #{i} "}
-      puts
-      (0..7).each do |row|
-        print "#{row + 1}  "
-        (0..7).each do |col|
-          bgrd_white = ((row + col) % 2 == 0)
+      if (color == :black)
+        print "   "
+        ("hgfedcba").each_char {|i| print " #{i} "}
+        puts
+        (0..7).each do |row|
+          print "#{row + 1}  "
+          (0..7).each do |col|
+            bgrd_white = ((row + col) % 2 == 0)
 
-          piece = self.grid[row][col]
-          if piece.nil?
-            if (bgrd_white)
-              print "   "
+            piece = self.grid[row][col]
+            if piece.nil?
+              if (bgrd_white)
+                print "   "
+              else
+                print "   ".on_white
+              end
             else
-              print "   ".on_white
-            end
-          else
-            if (bgrd_white)
-              piece = [piece.color, piece.piece_type]
-              print " "+(displays[piece]+ " ")
-            else
-              piece = [piece.color, piece.piece_type]
-              print " ".on_white+(displays[piece].on_white + " ".on_white)
+              if (bgrd_white)
+                piece = [piece.color, piece.piece_type]
+                print " "+(displays[piece]+ " ")
+              else
+                piece = [piece.color, piece.piece_type]
+                print " ".on_white+(displays[piece].on_white + " ".on_white)
+              end
             end
           end
+          puts
         end
+      else
+        print "   "
+        ("abcdefgh").each_char {|i| print " #{i} "}
         puts
+        7.downto(0) do |row|
+          print "#{row + 1}  "
+          7.downto(0).each do |col|
+            bgrd_white = ((row + col) % 2 == 0)
+
+            piece = self.grid[row][col]
+            if piece.nil?
+              if (bgrd_white)
+                print "   "
+              else
+                print "   ".on_white
+              end
+            else
+              if (bgrd_white)
+                piece = [piece.color, piece.piece_type]
+                print " "+(displays[piece]+ " ")
+              else
+                piece = [piece.color, piece.piece_type]
+                print " ".on_white+(displays[piece].on_white + " ".on_white)
+              end
+            end
+          end
+          puts
+        end
       end
 
       nil
@@ -645,6 +714,9 @@ module Chess
   class InvalidMoveError < StandardError
   end
 
+  class InvalidInputError < StandardError
+  end
+
   class Game
 
     # def initialize(board = Board.new, player1 = HumanPlayer.new,
@@ -660,13 +732,17 @@ module Chess
 
     def play
       puts "Welcome to Chess"
-      @board.render
+      @board.render(:white)
       puts "Please enter your move by entering your start coordinates(e.g. e2)"
       puts "And then enter the end coordinates (e.g. e4)"
       #take moves loop
       turn_num = 0
       until(game_over?)
-        puts turn_num.even? ? "White to move"  : "Black to move"
+        color = turn_num.even? ? :white : :black
+        puts "#{color.to_s.capitalize} to move"
+
+        # system("clear")
+    #     @board.render(color)
 
         begin
           print "Start position > "
@@ -683,7 +759,7 @@ module Chess
         end
 
         system("clear")
-        @board.render
+        @board.render(:white)
 
         unless game_over?
           puts "White is in check" if @board.in_check?(:white)

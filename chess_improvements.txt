@@ -1,0 +1,24 @@
+- piece_type => class
+- multiple files
+- dup pieces more efficiently
+- helper methods for pawn moves
+- flatten/compact instead of nesting
+- get rid of multipliers
+- grid is reader not accessor
+- array of pieces
+
+-----------
+board render flips every turn
+board renders and inputs 1-8,a-h
+castling
+queening-pawns
+
+en passe
+
+stalemate
+too-few-pieces draw
+
+save game
+
+
+AI
