@@ -1,6 +1,6 @@
 require 'colorize'
 # encoding: utf-8
-
+require 'debugger'
 module Chess
 
   DIAGONALS = [ [1,1], [1,-1], [-1,-1], [-1,1] ]
@@ -70,15 +70,6 @@ module Chess
     end
 
     def in_check?(color)
-      # (1)find the right-colored king's position
-      # -> nested iteration through whole grid, until grid[position] == KING
-      # ---> if there is no king, raise error
-      #
-      # (2)find if any other piece can move there
-      # Algorithm1: iterate through every other-colored piece
-      # -> if that piece's moves_array includes the King's position => in check
-      # Algorithm2: starting at the king's square, go through all the ways a piece can move (e..g DIAGONALS, KNIGHTS_DIRs, etc.)
-      # if, by moving in that direction, the KING could reach the square of an other-colored piece of the right type => in check (e.g. if by moving diagonally, the white King could reach a black bishop or a black Queen, then the King is in check)
 
       kings_position = nil
       (0..7).each do |row|
@@ -247,22 +238,12 @@ module Chess
     end
 
     def inspect
-      [self.piece_type, self.color].inspect
+      [self.piece_type, self.color, self.position].inspect
     end
 
-    # def dup_with_board(board)
-#       # (1) create new piece with (own_color, a dup of own_pos, board, own_piece_type)
-#       duped_color = self.color
-#       duped_position = self.position
-#       duped_board = board
-#       Piece.new()
-#       #[duped_color, duped_position, duped_board]
-#       [self.color, self.position, self.]
-#     end
 
     def valid_moves
-      # (1) Calls moves
-      # (2) Rejects all moves that would move_into_check
+
       self.moves.reject { |move| move_into_check?(move) }
     end
 
@@ -277,15 +258,21 @@ module Chess
     end
 
     def move_into_check?(pos)
-      # (1) duplicate the board
+      #debugger
+
       duped_board = self.board.dup
+      #refactor so that we just have a Piece#dup method
+      duped_piece = self.dup
+      duped_piece.board = duped_board
+
+      # (1) duplicate the board
+
       # (2) move the piece into pos
-      #duped_board.move(self.position, pos)
-      duped_board.grid[pos.first][pos.last] = self
-      duped_board.grid[self.position.first][self.position.last] = nil
-      self.position = pos
+      duped_board.grid[pos.first][pos.last] = duped_piece
+      duped_board.grid[duped_piece.position[0]][duped_piece.position[1]] = nil
+      duped_piece.position = pos
       # (3) return true if board.in_check?(own color)
-      duped_board.in_check?(self.color)
+      duped_board.in_check?(duped_piece.color)
     end
 
 
