@@ -19,7 +19,7 @@ module Chess
 
 
   class Board
-    attr_accessor :grid
+    attr_reader :grid, :pieces
 
     #later on add the feature that you can create a Board mid-game
     # => a filled grid(8x8)
@@ -134,11 +134,62 @@ module Chess
       piece_to_move = self[start_pos]
       raise InvalidMoveError.new "No piece in position" unless piece_to_move
       poss_moves = piece_to_move.valid_moves
+      # check if piece == King
+      # if so -->  if castling_possible?
+      # ----------------->> poss_moves << [kingside castle,] [queenside castle]
+      k_castling_move = nil
+      q_castling_move = nil
+      color = piece_to_move.color
+      is_king = (piece_to_move.class == King)
+      if(is_king)
+        if(kingside_possible?(color))
+          k_castling_move = (color == :white) ? [0, 1] : [7,1]
+          poss_moves << k_castling_move
+        end
+
+        if(queenside_possible?(color))
+          q_castling_move = (color == :white) ? [0, 5] : [7,5]
+          poss_moves << q_castling_move
+        end
+
+      end
+
+
       raise InvalidMoveError.new "Move Invalid" unless poss_moves.include?(end_pos)
 
       self.grid[end_pos.first][end_pos.last] = piece_to_move
+      # if end_pos == a castling move
+      # ----> move the rook as appropriate
+      if((end_pos == k_castling_move) && is_king)
+        rook_start = (color == :white) ? [0, 0] : [7,0]
+        rook_end = (color == :white) ? [0, 2] : [7,2]
+
+        rook = self[rook_start]
+
+        rook.position = rook_end
+        self[rook_end] = rook
+        self[rook_start] = nil
+      end
+      #---Queenside
+      if((end_pos == q_castling_move) && is_king)
+        rook_start = (color == :white) ? [0, 7] : [7,7]
+        rook_end = (color == :white) ? [0, 4] : [7,4]
+
+        rook = self[rook_start]
+
+        rook.position = rook_end
+        self[rook_end] = rook
+        self[rook_start] = nil
+      end
+
+      #----Queen
+
       self.grid[start_pos.first][start_pos.last] = nil
       piece_to_move.position = end_pos
+
+      if(piece_to_move.class == King || piece_to_move.class == Rook)
+        piece_to_move.has_moved = true
+      end
 
       nil
     end
@@ -146,6 +197,12 @@ module Chess
     def [](position)
       x,y = position
       self.grid[x][y]
+    end
+
+
+    def []=(position, mark)
+      x,y = position
+      self.grid[x][y] = mark
     end
 
     def dup
@@ -188,10 +245,10 @@ module Chess
       }
 
       print "   "
-      8.times {|i| print "#{i}  "}
+      ("hgfedcba").each_char {|i| print " #{i} "}
       puts
       (0..7).each do |row|
-        print "#{row}  "
+        print "#{row + 1}  "
         (0..7).each do |col|
           bgrd_white = ((row + col) % 2 == 0)
 
@@ -218,7 +275,110 @@ module Chess
       nil
     end
 
+    #private
+    def king_eligible?(color)
+      #assume you have array of all the pieces
+      # call it pieces
+        return false if in_check?(color)
+        puts "king not in check"
+        init_pos = (color == :white) ? [0, 3] : [7,3]
 
+        king = self[init_pos]
+      # king = pieces.detect do |piece|
+ #        piece.class == King && piece.color == color
+ #      end
+
+        puts "king detected is:"
+        p king
+        return false if king.nil? || king.class != King
+
+        puts "we have the right king"
+        !king.has_moved
+    end
+
+    def kingside_possible?(color)
+      return false unless king_eligible?(color)
+      puts "king is eligible"
+      return false unless kingside_rook_eligible?(color)
+      puts "rook is eligible"
+      return false unless kingside_clear?(color)
+      puts "kingside is clear"
+
+      !kingside_line_in_check?(color)
+    end
+
+    def kingside_rook_eligible?(color)
+      init_pos = (color == :white) ? [0, 0] : [7,0]
+
+      rook = self[init_pos]
+
+      return false if rook.nil? || rook.class != Rook
+
+      !rook.has_moved
+    end
+
+    def kingside_clear?(color)
+      spaces = (color == :white) ? [[0,1], [0,2]] : [[7,1], [7,2]]
+      self[spaces[0]].nil? && self[spaces[1]].nil?
+    end
+
+    def kingside_line_in_check?(color)
+      spaces = (color == :white) ? [[0,1], [0,2]] : [[7,1], [7,2]]
+      king_pos = (color == :white) ? [0, 3] : [7,3]
+
+      dup_board = self.dup
+      king = dup_board[king_pos]
+
+      spaces.any? do |space|
+        king.position = space
+        dup_board[space] = king
+        dup_board[king_pos] = nil
+
+        dup_board.in_check?(color)
+      end
+    end
+    #------------Queenside castling
+    def queenside_possible?(color)
+      return false unless king_eligible?(color)
+      return false unless queenside_rook_eligible?(color)
+      return false unless queenside_clear?(color)
+
+      !queenside_line_in_check?(color)
+    end
+
+    def queenside_rook_eligible?(color)
+      init_pos = (color == :white) ? [0, 7] : [7,7]
+
+      rook = self[init_pos]
+
+      return false if rook.nil? || rook.class != Rook
+
+      !rook.has_moved
+    end
+
+    def queenside_clear?(color)
+      spaces = (color == :white) ? [[0,4], [0,5], [0,6]] : [[7,4], [7,5], [7,6]]
+      self[spaces[0]].nil? && self[spaces[1]].nil? && self[spaces[2]].nil?
+    end
+
+    def queenside_line_in_check?(color)
+      spaces = (color == :white) ? [[0,4], [0,5]] : [[7,4], [7,5]]
+      king_pos = (color == :white) ? [0, 3] : [7,3]
+
+      dup_board = self.dup
+      king = dup_board[king_pos]
+
+      spaces.any? do |space|
+        king.position = space
+        dup_board[space] = king
+        dup_board[king_pos] = nil
+
+        dup_board.in_check?(color)
+      end
+    end
+
+
+    #-----------
   end
 
 
@@ -400,10 +560,12 @@ module Chess
   end
 
   class Rook < SlidingPiece
+    attr_accessor :has_moved
 
     def initialize(color, position, board)
       super(color, position, board)
       @piece_type = :rook
+      @has_moved = false
     end
 
 
@@ -411,9 +573,12 @@ module Chess
   end
 
   class King < SteppingPiece
+    attr_accessor :has_moved
+
     def initialize(color, position, board)
       super(color, position, board)
       @piece_type = :king
+      @has_moved = false
     end
 
 
@@ -496,8 +661,8 @@ module Chess
     def play
       puts "Welcome to Chess"
       @board.render
-      puts "Please enter your move by entering your start coordinates(e.g. 1,3)"
-      puts "And then enter the end coordinates (e.g. 3,3)"
+      puts "Please enter your move by entering your start coordinates(e.g. e2)"
+      puts "And then enter the end coordinates (e.g. e4)"
       #take moves loop
       turn_num = 0
       until(game_over?)
@@ -505,11 +670,10 @@ module Chess
 
         begin
           print "Start position > "
-          start_pos = gets.chomp.split(',').map(&:to_i)
+          start_pos = convert_input(gets.chomp.split("").reverse)
 
           print "End position > "
-          end_pos = gets.chomp.split(',').map(&:to_i)
-
+          end_pos = convert_input(gets.chomp.split("").reverse)
 
           execute_move(start_pos, end_pos, turn_num)
         rescue InvalidMoveError => e
@@ -518,6 +682,7 @@ module Chess
           retry
         end
 
+        system("clear")
         @board.render
 
         unless game_over?
@@ -533,13 +698,15 @@ module Chess
 
     end
 
+    private
     def game_over?
       # come back later for draws
       @board.checkmate?(:black) || @board.checkmate?(:white)
     end
-
+    # input is in form: start_pos = ["3", "e"]
     def execute_move(start_pos, end_pos, turn_num)
       #check if piece at start_pos is of the right color (matches the turn number)
+
       color_to_move = (turn_num.even? ? :white : :black)
       if (@board[start_pos].color != color_to_move )
         raise InvalidMoveError.new("You must move a piece of your own color")
@@ -547,6 +714,13 @@ module Chess
 
       @board.move(start_pos, end_pos)
     end
+
+    def convert_input(input_arr)
+      output_pos = [input_arr.first.to_i - 1]
+      col_idx = 7 - (input_arr.last.downcase.ord - 97)
+      output_pos << col_idx
+    end
+
 
   end
 
